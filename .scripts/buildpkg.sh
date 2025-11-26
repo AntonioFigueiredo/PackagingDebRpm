@@ -24,7 +24,7 @@ cp -ra ${TOP_DIR}/${SRC_DIR_NAME} ${WORKING_DIR}
 cd ${WORKING_DIR}/${SRC_DIR_NAME}
 
 # Build orig-tar.
-git archive HEAD | bzip2 > ../plxsdk_0.1.0.orig.tar.bz2
+git archive HEAD | bzip2 > ../${PROJECT_NAME}_0.1.0.orig.tar.bz2
 
 # Add deb-src entries
 # # changes start
