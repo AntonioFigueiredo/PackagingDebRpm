@@ -1,0 +1,251 @@
+name: Packaging
+# Test the packaging workflow on push
+on:
+  workflow_call
+  #push
+
+permissions:
+  checks: write
+  contents: write
+
+env:
+  RELEASE: unstable
+  PROJECT_NAME: plxsdk
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: source_dir
+
+      - name: Get Time
+        id: get-time
+        run: |
+          echo "datetime=$(/bin/date --iso-8601=seconds)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-${{ env.RELEASE }}-ccache-${{ steps.get-time.outputs.datetime }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.RELEASE }}-ccache-
+
+      - name: Build Package
+        uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/gbp:latest
+        with:
+          entrypoint: /bin/bash
+          args: source_dir/.scripts/buildpkg.sh
+
+      - name: Upload Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-${{ env.RELEASE }}-debpkg
+          path: debian/output/*
+          retention-days: 2
+
+  run-lintian:
+    needs: [ build-package ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: source_dir
+
+      - name: Download all Debian packaging workflow run artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Run Lintian on ${{ env.RELEASE }}
+        uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/lintian:testing
+        with:
+          entrypoint: /bin/bash
+          args: source_dir/.scripts/runlintian.sh
+
+      - name: Publish Lintian Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: lintian/*.xml
+          report_individual_runs: true
+
+      - name: Upload Lintian results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ runner.os }}-${{ env.RELEASE }}-lintian
+          path: lintian
+          retention-days: 2
+
+  test-dkms:
+    needs: [ build-package ]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        container: 
+          - "debian:stable"
+          - "debian:bullseye"
+          - "debian:unstable"
+          - "debian:testing"
+
+    container:
+      image: ${{ matrix.container }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: source_dir
+
+      - name: Download all Debian packaging workflow run artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Install DKMS
+        run: apt-get update && apt-get install -y dkms
+
+      - name: Install package and compile on ${{ matrix.container }}
+        run: ./source_dir/.scripts/testdkms.sh
+
+  create-aptly-repo:
+    needs: [ build-package ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: source_dir
+
+      - name: Download all Debian packaging workflow run artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Prepare aptly repo
+        uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/aptly
+        with:
+          entrypoint: /bin/bash
+          args: source_dir/.scripts/prepaptly.sh
+
+      - name: Upload Repo
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-${{ env.RELEASE }}-repo
+          path: debrepo.tar.gz
+          retention-days: 2
+
+  build-rpm:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container:
+          - "rockylinux:9"
+
+    container:
+      image: ${{ matrix.container }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: source_dir
+      
+      - name: Install EPEL
+        run: dnf install -y epel-release
+      
+      - name: Install Build Tools
+        run: dnf install -y gcc make rpm-build rpmdevtools dkms dnf-utils kernel-abi-stablelists kernel-rpm-macros udev
+
+      - name: Build RPM on ${{ matrix.container }}
+        run: ./source_dir/.scripts/buildrpm.sh
+
+      - name: Upload RPM Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-artifacts
+          path: ${{ github.workspace }}/rpm-artifacts/**/*.rpm
+    
+  test-rpm:
+    needs: [ build-rpm ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        container:
+          - "rockylinux:9"
+      
+    container:
+      image: ${{ matrix.container }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: source_dir
+
+      - name: Download RPM Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rpm-artifacts
+          path: pkgs/
+
+      - name: Install EPEL
+        run: dnf install -y epel-release
+
+      - name: Install DKMS
+        run: dnf install -y dkms
+  
+      - name: Install package and compile on ${{ matrix.container }}
+        run: ./source_dir/.scripts/testrpm.sh
+
+
+  deploy-repos-and-data:
+    needs: [ run-lintian, create-aptly-repo ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all Debian packaging workflow run artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Filter out repo data
+        run: |
+          mkdir -p publish/apt
+          for TAR in *-repo/*.tar.*; do tar xf $TAR -C publish/apt/; done
+
+      - name: Filter out Lintian HTML
+        run: |
+          mkdir -p publish/lintian
+          echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">' > publish/lintian/index.html
+          echo '<html><body>' >> publish/lintian/index.html
+          for LINTIAN_DIR in *-lintian; do
+            cp -ra ${LINTIAN_DIR} publish/lintian/;
+            LINTIAN_HTML=$(ls -1 ${LINTIAN_DIR}/*.html)
+            echo "<a href=\"${LINTIAN_HTML}\">${LINTIAN_DIR}</a><br />" >> publish/lintian/index.html
+          done
+          echo '</body></html>' >> publish/lintian/index.html
+
+      - name: Create Root index.html
+        run: |
+          echo '<!DOCTYPE html>
+          <html>
+            <head>
+              <title>cros3 Packages</title>
+              <meta http-equiv="refresh" content="0; url=lintian/" />
+            </head>
+            <body>
+              Redirecting to <a href="lintian/">Lintian Reports</a>...
+            </body>
+          </html>' > publish/index.html
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        #if: endsWith(github.event.ref, '/master')
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./publish
+          force_orphan: true
