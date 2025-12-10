@@ -7,6 +7,14 @@ on:
         required: true
         type: string
         default: unnamed
+      build_rpm:
+        required: true
+        type: boolean
+        default: false
+      build_deb:
+        required: true
+        type: boolean
+        default: false
   #push
 
 permissions:
