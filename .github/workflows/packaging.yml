@@ -15,6 +15,14 @@ on:
         required: true
         type: boolean
         default: false
+      deb_matrix:
+        required: false
+        type: string
+        default: '{"container":["debian:stable"]}'
+      rpm_matrix:
+        required: false
+        type: string
+        default: '{"container":["rockylinux:9"]}'
   #push
 
 permissions:
@@ -106,12 +114,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      matrix:
-        container: 
-          - "debian:stable"
-          - "debian:bullseye"
-          - "debian:unstable"
-          - "debian:testing"
+      matrix: ${{ fromJson(inputs.deb_matrix) }}
 
     container:
       image: ${{ matrix.container }}
@@ -162,9 +165,7 @@ jobs:
     if: ${{ inputs.build_rpm }}
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        container:
-          - "rockylinux:9"
+      matrix: ${{ fromJson(inputs.rpm_matrix) }}
 
     container:
       image: ${{ matrix.container }}
@@ -195,9 +196,7 @@ jobs:
     needs: [ build-rpm ]
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        container:
-          - "rockylinux:9"
+      matrix: ${{ fromJson(inputs.rpm_matrix) }}
       
     container:
       image: ${{ matrix.container }}
