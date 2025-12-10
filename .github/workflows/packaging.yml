@@ -249,42 +249,60 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download all Debian packaging workflow run artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
-
-      - name: Filter out repo data
+      
+      - name: Publish APT Repo
+        if: ${{ inputs.build_deb }}
         run: |
           mkdir -p publish/apt
-          for TAR in *-repo/*.tar.*; do tar xf $TAR -C publish/apt/; done
-
-      - name: Filter out Lintian HTML
+          for TAR in *-repo/*.tar.*; do
+            tar xf $TAR -C publish/apt/
+          done
+      
+      - name: Publish Lintian Reports
+        if: ${{ inputs.build_deb }}
         run: |
           mkdir -p publish/lintian
-          echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">' > publish/lintian/index.html
-          echo '<html><body>' >> publish/lintian/index.html
+          echo '<!DOCTYPE html><html><body>' > publish/lintian/index.html
           for LINTIAN_DIR in *-lintian; do
-            cp -ra ${LINTIAN_DIR} publish/lintian/;
+            cp -ra ${LINTIAN_DIR} publish/lintian/
             LINTIAN_HTML=$(ls -1 ${LINTIAN_DIR}/*.html)
             echo "<a href=\"${LINTIAN_HTML}\">${LINTIAN_DIR}</a><br />" >> publish/lintian/index.html
           done
           echo '</body></html>' >> publish/lintian/index.html
-
+      
+      - name: Publish RPM Repositories
+        if: ${{ inputs.build_rpm }}
+        run: |
+          mkdir -p publish/rpm
+          for RPMDIR in rpm-repo-*; do
+            DISTRO=${RPMDIR#rpm-repo-}
+            mkdir -p publish/rpm/${DISTRO}
+            cp -ra ${RPMDIR}/* publish/rpm/${DISTRO}/
+          done
+      
       - name: Create Root index.html
         run: |
-          echo '<!DOCTYPE html>
+          cat <<EOF > publish/index.html
+          <!DOCTYPE html>
           <html>
             <head>
-              <title>cros3 Packages</title>
-              <meta http-equiv="refresh" content="0; url=lintian/" />
+              <title>${{ env.PROJECT_NAME }} Packages</title>
             </head>
             <body>
-              Redirecting to <a href="lintian/">Lintian Reports</a>...
+              <h1>${{ env.PROJECT_NAME }} Package Repositories</h1>
+              <ul>
+                $( [ "${{ inputs.build_deb }}" = "true" ] && echo '<li><a href="apt/">Debian APT Repo</a></li>' )
+                $( [ "${{ inputs.build_rpm }}" = "true" ] && echo '<li><a href="rpm/">RPM DNF Repo</a></li>' )
+                $( [ "${{ inputs.build_deb }}" = "true" ] && echo '<li><a href="lintian/">Lintian Reports</a></li>' )
+              </ul>
             </body>
-          </html>' > publish/index.html
-
+          </html>
+          EOF
+        
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
-        #if: endsWith(github.event.ref, '/master')
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
