@@ -188,11 +188,18 @@ jobs:
 
       - name: Build RPM on ${{ matrix.container }}
         run: ./source_dir/.scripts/buildrpm.sh
+      
+
+      - name: Create safe artifact name
+        id: safename
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.container }}" | tr ':' '-')
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
 
       - name: Upload RPM Repository
         uses: actions/upload-artifact@v4
         with:
-          name: rpm-repo-${{ matrix.container }}
+          name: rpm-repo-${{ steps.safename.outputs.safe_name }}
           path: rpm-artifacts/
     
   test-rpm:
@@ -211,10 +218,16 @@ jobs:
         with:
           path: source_dir
 
+      - name: Create safe artifact name
+        id: safename
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.container }}" | tr ':' '-')
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+
       - name: Download RPM Repository
         uses: actions/download-artifact@v4
         with:
-          name: rpm-repo-${{ matrix.container }}
+          name: rpm-repo-${{ steps.safename.outputs.safe_name }}
           path: pkgs/
 
       - name: Install EPEL
