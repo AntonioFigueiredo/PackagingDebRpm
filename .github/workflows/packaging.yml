@@ -188,7 +188,7 @@ jobs:
       - name: Upload RPM Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rpm-artifacts
+          name: rpm-artifacts-${{ matrix.container }}
           path: ${{ github.workspace }}/rpm-artifacts/**/*.rpm
     
   test-rpm:
@@ -210,7 +210,7 @@ jobs:
       - name: Download RPM Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: rpm-artifacts
+          name: rpm-artifacts-${{ matrix.container }}
           path: pkgs/
 
       - name: Install EPEL
