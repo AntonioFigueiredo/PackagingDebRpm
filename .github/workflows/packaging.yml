@@ -18,11 +18,11 @@ on:
       deb_matrix:
         required: false
         type: string
-        default: '{"container":["debian:stable"]}'
+        default: test #'{"container":["debian:stable"]}'
       rpm_matrix:
         required: false
         type: string
-        default: '{"container":["rockylinux:9"]}'
+        default: test #'{"container":["rockylinux:9"]}'
   #push
 
 permissions:
