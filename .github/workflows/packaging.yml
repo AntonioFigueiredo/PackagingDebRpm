@@ -164,6 +164,7 @@ jobs:
   build-rpm:
     if: ${{ inputs.build_rpm }}
     runs-on: ubuntu-latest
+
     strategy:
       matrix: ${{ fromJson(inputs.rpm_matrix) }}
 
@@ -181,15 +182,18 @@ jobs:
       
       - name: Install Build Tools
         run: dnf install -y gcc make rpm-build rpmdevtools dkms dnf-utils kernel-abi-stablelists kernel-rpm-macros udev
+      
+      - name: Install createrepo
+        run: dnf install -y createrepo_c
 
       - name: Build RPM on ${{ matrix.container }}
         run: ./source_dir/.scripts/buildrpm.sh
 
-      - name: Upload RPM Artifacts
+      - name: Upload RPM Repository
         uses: actions/upload-artifact@v4
         with:
-          name: rpm-artifacts-${{ matrix.container }}
-          path: ${{ github.workspace }}/rpm-artifacts/**/*.rpm
+          name: rpm-repo-${{ matrix.container }}
+          path: rpm-artifacts/
     
   test-rpm:
     if: ${{ inputs.build_rpm }}
@@ -207,10 +211,10 @@ jobs:
         with:
           path: source_dir
 
-      - name: Download RPM Artifacts
+      - name: Download RPM Repository
         uses: actions/download-artifact@v4
         with:
-          name: rpm-artifacts-${{ matrix.container }}
+          name: rpm-repo-${{ matrix.container }}
           path: pkgs/
 
       - name: Install EPEL
@@ -224,8 +228,11 @@ jobs:
 
 
   deploy-repos-and-data:
-    if: ${{ inputs.build_deb }}
-    needs: [ run-lintian, create-aptly-repo ]
+    if: ${{ inputs.build_deb || inputs.build_rpm }}
+    needs:
+      - run-lintian
+      - create-aptly-repo
+      - test-rpm
     runs-on: ubuntu-latest
 
     steps:
