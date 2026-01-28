@@ -45,6 +45,11 @@ jobs:
     if: ${{ inputs.sign_packages }}
     runs-on: ubuntu-latest
     steps:
+      - name: Debug secret length
+        run: |
+          echo "Key length: ${#GPG_PRIVATE_KEY}"
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Import GPG Key
         run: |
           echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
