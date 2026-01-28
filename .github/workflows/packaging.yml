@@ -52,7 +52,9 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Import GPG Key
         run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          gpg "${GPG_PRIVATE_KEY}" <<EOF
+          ${GPG_PRIVATE_KEY}
+          EOF
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       - name: Test signing
