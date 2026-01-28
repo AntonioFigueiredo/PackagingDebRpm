@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         default: unnamed
+      sign_packages:
+        description: "Pakete signieren"
+        required: false
+        default: false
+        type: boolean
       build_rpm:
         required: true
         type: boolean
@@ -36,6 +41,19 @@ env:
   BUILD_DEB: ${{ inputs.build_deb }}
 
 jobs:
+  gpg-test:
+    if: ${{ inputs.sign_packages }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import GPG Key
+        run: |
+          echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      - name: Test signing
+        run: |
+          echo "hello world" > test.txt
+          gpg --batch --yes --clearsign test.txt
   build-package:
     if: ${{ inputs.build_deb }}
     runs-on: ubuntu-latest
