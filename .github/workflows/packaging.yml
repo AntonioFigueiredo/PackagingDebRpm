@@ -55,6 +55,8 @@ jobs:
           echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      - name: List secret keys
+        run: gpg --list-secret-keys --keyid-format LONG
       - name: Test signing
         run: |
           echo "hello world" > test.txt
