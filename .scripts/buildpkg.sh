@@ -72,7 +72,7 @@ BUILD_LOGFILE="${WORKING_DIR}/${BUILD_LOGFILE_SOURCE}_${BUILD_LOGFILE_VERSION}_$
 # Build package as user buildci
 ls -la
 ls -la ..
-su - buildci -c "eatmydata dpkg-buildpackage -kBD78A430515E1D36 ${DB_BUILD_PARAM}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
+su - buildci -c "cd \"${WORKING_DIR}/${SRC_DIR_NAME}\" && eatmydata dpkg-buildpackage -kBD78A430515E1D36 ${DB_BUILD_PARAM}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
 
 ls -la
 find
