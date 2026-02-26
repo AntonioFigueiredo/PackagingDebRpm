@@ -101,10 +101,9 @@ jobs:
           path: debian/output/*
           retention-days: 2
       
-      - name: Verify changes signature
+      - name: Show build output
         run: |
-          ls -la debian/output
-          gpg --verify debian/output/*.changes
+          find debian/output -maxdepth 1 -type f
       
       - name: Verify changes signature
         run: |
