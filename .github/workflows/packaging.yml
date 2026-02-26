@@ -81,18 +81,14 @@ jobs:
           key: ${{ runner.os }}-${{ env.RELEASE }}-ccache-${{ steps.get-time.outputs.datetime }}
           restore-keys: |
             ${{ runner.os }}-${{ env.RELEASE }}-ccache-
-
-      - name: Import GPG Key
-        run: |
-          echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       
       - name: Build Package
         uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/gbp:latest
         with:
           entrypoint: /bin/bash
           args: source_dir/.scripts/buildpkg.sh
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Upload Package
         uses: actions/upload-artifact@v4
