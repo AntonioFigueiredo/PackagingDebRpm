@@ -100,9 +100,16 @@ jobs:
           name: ${{ runner.os }}-${{ env.RELEASE }}-debpkg
           path: debian/output/*
           retention-days: 2
+      
       - name: Verify changes signature
         run: |
-          gpg --verify ../*.changes
+          ls -la debian/output
+          gpg --verify debian/output/*.changes
+      
+      - name: Verify changes signature
+        run: |
+          ls -la debian/output
+          gpg --verify debian/output/*.changes
 
   run-lintian:
     if: ${{ inputs.build_deb }}
