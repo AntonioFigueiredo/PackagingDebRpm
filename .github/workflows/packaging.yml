@@ -72,7 +72,7 @@ jobs:
       - name: Checkout reusable workflow repository
         uses: actions/checkout@v4
         with:
-          repository: org/ci-repo
+          repository: AntonioFigueiredo/PackagingDebRpm/.github/workflows/packaging.yml@main
           ref: main
           path: ci
 
@@ -127,7 +127,7 @@ jobs:
       - name: Checkout reusable workflow repository
         uses: actions/checkout@v4
         with:
-          repository: org/ci-repo
+          repository: AntonioFigueiredo/PackagingDebRpm/.github/workflows/packaging.yml@main
           ref: main
           path: ci
 
@@ -176,7 +176,7 @@ jobs:
       - name: Checkout reusable workflow repository
         uses: actions/checkout@v4
         with:
-          repository: org/ci-repo
+          repository: AntonioFigueiredo/PackagingDebRpm/.github/workflows/packaging.yml@main
           ref: main
           path: ci
 
@@ -203,7 +203,7 @@ jobs:
       - name: Checkout reusable workflow repository
         uses: actions/checkout@v4
         with:
-          repository: org/ci-repo
+          repository: AntonioFigueiredo/PackagingDebRpm/.github/workflows/packaging.yml@main
           ref: main
           path: ci
 
@@ -242,7 +242,7 @@ jobs:
       - name: Checkout reusable workflow repository
         uses: actions/checkout@v4
         with:
-          repository: org/ci-repo
+          repository: AntonioFigueiredo/PackagingDebRpm/.github/workflows/packaging.yml@main
           ref: main
           path: ci
       
@@ -290,7 +290,7 @@ jobs:
       - name: Checkout reusable workflow repository
         uses: actions/checkout@v4
         with:
-          repository: org/ci-repo
+          repository: AntonioFigueiredo/PackagingDebRpm/.github/workflows/packaging.yml@main
           ref: main
           path: ci
 
