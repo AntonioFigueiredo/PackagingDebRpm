@@ -57,7 +57,7 @@ mkdir -p /home/buildci/.gnupg
 chown -R buildci:buildci /home/buildci/.gnupg
 chmod 700 /home/buildci/.gnupg
 if [ -n "$GPG_PRIVATE_KEY" ]; then
-    su buildci -c "echo \"$GPG_PRIVATE_KEY\" | gpg --batch --import"
+    su - buildci -c "echo \"$GPG_PRIVATE_KEY\" | gpg --batch --import"
 fi
 
 chown -R buildci:buildci ${WORKING_DIR} ${CCACHE_DIR}
@@ -72,7 +72,7 @@ BUILD_LOGFILE="${WORKING_DIR}/${BUILD_LOGFILE_SOURCE}_${BUILD_LOGFILE_VERSION}_$
 # Build package as user buildci
 ls -la
 ls -la ..
-su buildci -c "eatmydata dpkg-buildpackage -kBD78A430515E1D36 ${DB_BUILD_PARAM}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
+su - buildci -c "eatmydata dpkg-buildpackage -kBD78A430515E1D36 ${DB_BUILD_PARAM}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
 
 ls -la
 find
