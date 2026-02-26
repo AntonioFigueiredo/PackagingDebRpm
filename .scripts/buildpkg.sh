@@ -14,6 +14,11 @@ git config --global --add safe.directory /github/workspace/debian/output/source_
 mkdir -p ${WORKING_DIR}
 cp -ra ${TOP_DIR}/${SRC_DIR_NAME} ${WORKING_DIR}
 
+# Import GPG key if provided
+if [ -n "$GPG_PRIVATE_KEY" ]; then
+    echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+fi
+
 # Enter source package dir
 cd ${WORKING_DIR}/${SRC_DIR_NAME}
 
@@ -49,11 +54,13 @@ useradd buildci
 
 # Copy GPG keyring to buildci user
 mkdir -p /home/buildci/.gnupg
-cp -r /root/.gnupg/* /home/buildci/.gnupg/ 2>/dev/null || true
 chown -R buildci:buildci /home/buildci/.gnupg
 chmod 700 /home/buildci/.gnupg
+if [ -n "$GPG_PRIVATE_KEY" ]; then
+    su buildci -c "echo \"$GPG_PRIVATE_KEY\" | gpg --batch --import"
+fi
 
-chown -R buildci. ${WORKING_DIR} ${CCACHE_DIR}
+chown -R buildci:buildci ${WORKING_DIR} ${CCACHE_DIR}
 
 # Define buildlog filename
 BUILD_LOGFILE_SOURCE=$(dpkg-parsechangelog -S Source)
