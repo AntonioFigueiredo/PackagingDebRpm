@@ -46,6 +46,13 @@ ccache -z
 
  # Create build user and fix permissions
 useradd buildci
+
+# Copy GPG keyring to buildci user
+mkdir -p /home/buildci/.gnupg
+cp -r /root/.gnupg/* /home/buildci/.gnupg/ 2>/dev/null || true
+chown -R buildci:buildci /home/buildci/.gnupg
+chmod 700 /home/buildci/.gnupg
+
 chown -R buildci. ${WORKING_DIR} ${CCACHE_DIR}
 
 # Define buildlog filename
@@ -58,7 +65,7 @@ BUILD_LOGFILE="${WORKING_DIR}/${BUILD_LOGFILE_SOURCE}_${BUILD_LOGFILE_VERSION}_$
 # Build package as user buildci
 ls -la
 ls -la ..
-su buildci -c "eatmydata dpkg-buildpackage ${DB_BUILD_PARAM}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
+su buildci -c "eatmydata dpkg-buildpackage -kBD78A430515E1D36 ${DB_BUILD_PARAM}" |& OUTPUT_FILENAME=${BUILD_LOGFILE} filter-output
 
 ls -la
 find
