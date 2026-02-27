@@ -59,7 +59,6 @@ jobs:
         run: |
           echo "hello world" > test.txt
           gpg --batch --yes --clearsign test.txt
-
   build-package:
     if: ${{ inputs.build_deb }}
     runs-on: ubuntu-latest
@@ -69,6 +68,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source_dir
+      
+      - name: Checkout reusable workflow repository
+        uses: actions/checkout@v4
+        with:
+          repository: AntonioFigueiredo/PackagingDebRpm
+          ref: main
+          path: ci
 
       - name: Get Time
         id: get-time
@@ -82,12 +88,14 @@ jobs:
           key: ${{ runner.os }}-${{ env.RELEASE }}-ccache-${{ steps.get-time.outputs.datetime }}
           restore-keys: |
             ${{ runner.os }}-${{ env.RELEASE }}-ccache-
-
+      
       - name: Build Package
         uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/gbp:latest
         with:
           entrypoint: /bin/bash
-          args: source_dir/.scripts/buildpkg.sh
+          args: ci/.scripts/buildpkg.sh
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Upload Package
         uses: actions/upload-artifact@v4
@@ -95,6 +103,21 @@ jobs:
           name: ${{ runner.os }}-${{ env.RELEASE }}-debpkg
           path: debian/output/*
           retention-days: 2
+      
+      - name: Show build output
+        run: |
+          find debian/output -maxdepth 1 -type f
+      
+      - name: Import GPG public key
+        run: |
+          echo "${{ secrets.GPG_PUBLIC_KEY }}" | gpg --import
+        env:
+          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+      
+      - name: Verify changes signature
+        run: |
+          ls -la debian/output
+          gpg --verify debian/output/*.changes
 
   run-lintian:
     if: ${{ inputs.build_deb }}
@@ -106,6 +129,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source_dir
+      
+      - name: Checkout reusable workflow repository
+        uses: actions/checkout@v4
+        with:
+          repository: AntonioFigueiredo/PackagingDebRpm
+          ref: main
+          path: ci
 
       - name: Download all Debian packaging workflow run artifacts
         uses: actions/download-artifact@v4
@@ -114,7 +144,7 @@ jobs:
         uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/lintian:testing
         with:
           entrypoint: /bin/bash
-          args: source_dir/.scripts/runlintian.sh
+          args: ci/.scripts/runlintian.sh
 
       - name: Publish Lintian Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -148,6 +178,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source_dir
+      
+      - name: Checkout reusable workflow repository
+        uses: actions/checkout@v4
+        with:
+          repository: AntonioFigueiredo/PackagingDebRpm
+          ref: main
+          path: ci
 
       - name: Download all Debian packaging workflow run artifacts
         uses: actions/download-artifact@v4
@@ -156,7 +193,7 @@ jobs:
         run: apt-get update && apt-get install -y dkms
 
       - name: Install package and compile on ${{ matrix.container }}
-        run: ./source_dir/.scripts/testdkms.sh
+        run: ci/.scripts/testdkms.sh
 
   create-aptly-repo:
     if: ${{ inputs.build_deb }}
@@ -168,6 +205,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source_dir
+      
+      - name: Checkout reusable workflow repository
+        uses: actions/checkout@v4
+        with:
+          repository: AntonioFigueiredo/PackagingDebRpm
+          ref: main
+          path: ci
 
       - name: Download all Debian packaging workflow run artifacts
         uses: actions/download-artifact@v4
@@ -176,7 +220,7 @@ jobs:
         uses: docker://registry.salsa.debian.org/salsa-ci-team/pipeline/aptly
         with:
           entrypoint: /bin/bash
-          args: source_dir/.scripts/prepaptly.sh
+          args: ci/.scripts/prepaptly.sh
 
       - name: Upload Repo
         uses: actions/upload-artifact@v4
@@ -201,20 +245,28 @@ jobs:
         with:
           path: source_dir
       
+      - name: Checkout reusable workflow repository
+        uses: actions/checkout@v4
+        with:
+          repository: AntonioFigueiredo/PackagingDebRpm
+          ref: main
+          path: ci
+      
       - name: Install EPEL
         run: dnf install -y epel-release
       
       - name: Install Build Tools
-        run: dnf install -y gcc make rpm-build rpmdevtools dkms dnf-utils kernel-abi-stablelists kernel-rpm-macros udev rpm-sign
+        run: dnf install -y gcc make rpm-build rpmdevtools dkms dnf-utils kernel-abi-stablelists kernel-rpm-macros udev 
       
       - name: Install createrepo
         run: dnf install -y createrepo_c
 
       - name: Build RPM on ${{ matrix.container }}
-        run: ./source_dir/.scripts/buildrpm.sh
+        run: bash ci/.scripts/buildrpm.sh
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       
+
       - name: Create safe artifact name
         id: safename
         run: |
@@ -242,6 +294,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: source_dir
+      
+      - name: Checkout reusable workflow repository
+        uses: actions/checkout@v4
+        with:
+          repository: AntonioFigueiredo/PackagingDebRpm
+          ref: main
+          path: ci
 
       - name: Create safe artifact name
         id: safename
@@ -262,7 +321,7 @@ jobs:
         run: dnf install -y dkms
   
       - name: Install package and compile on ${{ matrix.container }}
-        run: ./source_dir/.scripts/testrpm.sh
+        run: ci/.scripts/testrpm.sh
 
 
   deploy-repos-and-data:

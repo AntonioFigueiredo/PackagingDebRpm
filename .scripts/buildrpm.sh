@@ -31,6 +31,8 @@ rpmbuild -ba ${PROJECT_NAME}.spec
 if [ -n "$GPG_PRIVATE_KEY" ]; then
     find . -name "*.rpm" -exec rpmsign --addsign {} \;
 fi
+echo "=== Verify RPM signatures ==="
+rpm -Kv ~/rpmbuild/RPMS/*/*.rpm
 
 mkdir -p ${GITHUB_WORKSPACE}/rpm-artifacts
 cp -r ~/rpmbuild/RPMS ${GITHUB_WORKSPACE}/rpm-artifacts/
