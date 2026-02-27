@@ -14,11 +14,6 @@ git config --global --add safe.directory /github/workspace/debian/output/source_
 mkdir -p ${WORKING_DIR}
 cp -ra ${TOP_DIR}/${SRC_DIR_NAME} ${WORKING_DIR}
 
-# Import GPG key if provided
-if [ -n "$GPG_PRIVATE_KEY" ]; then
-    echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-fi
-
 # Enter source package dir
 cd ${WORKING_DIR}/${SRC_DIR_NAME}
 
