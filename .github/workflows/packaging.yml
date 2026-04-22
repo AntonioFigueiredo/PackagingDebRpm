@@ -259,7 +259,7 @@ jobs:
         run: dnf install -y epel-release
       
       - name: Install Build Tools
-        run: dnf install -y gcc make rpm-build rpmdevtools dkms dnf-utils kernel-abi-stablelists kernel-rpm-macros udev 
+        run: dnf install -y gcc make rpm-build rpm-sign rpmdevtools dkms dnf-utils kernel-abi-stablelists kernel-rpm-macros udev 
       
       - name: Install createrepo
         run: dnf install -y createrepo_c

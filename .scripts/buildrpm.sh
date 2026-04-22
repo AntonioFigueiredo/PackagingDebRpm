@@ -48,6 +48,7 @@ dnf builddep -y ${PROJECT_NAME}.spec
 rpmbuild -ba ${PROJECT_NAME}.spec
 
 if [ -n "$GPG_PRIVATE_KEY" ]; then
+    command -v rpmsign
     find ~/rpmbuild/RPMS -type f -name "*.rpm" -exec rpmsign --addsign {} \;
     find ~/rpmbuild/SRPMS -type f -name "*.rpm" -exec rpmsign --addsign {} \;
 fi
