@@ -108,9 +108,9 @@ cat > ~/.aptly/public/index.html <<EOF
         </ul>
 
         <h2>Install</h2>
-        <pre><code>curl -fsSL https://antoniofigueiredo.github.io/PlxSdk/apt/repo-public-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/${PROJECT_NAME}-archive-keyring.gpg
+        <pre><code>curl -fsSL https://antoniofigueiredo.github.io/${PROJECT_NAME}/apt/repo-public-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/${PROJECT_NAME}-archive-keyring.gpg
 
-echo "deb [signed-by=/usr/share/keyrings/${PROJECT_NAME}-archive-keyring.gpg] https://antoniofigueiredo.github.io/PlxSdk/apt ${RELEASE} main" | sudo tee /etc/apt/sources.list.d/${PROJECT_NAME}.list > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/${PROJECT_NAME}-archive-keyring.gpg] https://antoniofigueiredo.github.io/${PROJECT_NAME}/apt ${RELEASE} main" | sudo tee /etc/apt/sources.list.d/${PROJECT_NAME}.list > /dev/null
 
 sudo apt update
 sudo apt install ${PROJECT_NAME}-dkms</code></pre>
