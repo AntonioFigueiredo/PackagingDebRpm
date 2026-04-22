@@ -364,11 +364,30 @@ jobs:
         if: ${{ inputs.build_rpm }}
         run: |
           mkdir -p publish/rpm
+
+          cat > publish/rpm/index.html <<EOF
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>${{ env.PROJECT_NAME }} RPM Repositories</title>
+            </head>
+            <body>
+              <h1>${{ env.PROJECT_NAME }} RPM Repositories</h1>
+          EOF
+
           for RPMDIR in rpm-repo-*; do
             DISTRO=${RPMDIR#rpm-repo-}
             mkdir -p publish/rpm/${DISTRO}
             cp -ra ${RPMDIR}/* publish/rpm/${DISTRO}/
+            echo "<p><a href=\"./${DISTRO}/\">${DISTRO}</a></p>" >> publish/rpm/index.html
           done
+
+          cat >> publish/rpm/index.html <<EOF
+            </body>
+          </html>
+          EOF
       
       - name: Create Root index.html
         run: |
