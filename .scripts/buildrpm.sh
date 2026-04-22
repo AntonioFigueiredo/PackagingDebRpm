@@ -11,20 +11,31 @@ if [ -n "$GPG_PRIVATE_KEY" ]; then
     chmod 700 ~/.gnupg
 
     echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-    KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+    KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
+    FINGERPRINT=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')
+
 
     if [ -z "$KEYID" ]; then
         echo "ERROR: Could not determine GPG key ID for RPM signing"
         exit 1
     fi
 
+    if [ -z "$FINGERPRINT" ]; then
+        echo "ERROR: Could not determine GPG fingerprint for RPM signing"
+        exit 1
+    fi
+
     cat > ~/.rpmmacros <<EOF
 %_signature gpg
-%_gpg_name $KEYID
+%_gpg_name $FINGERPRINT
 %_gpgbin /usr/bin/gpg
 %_gpg_path ~/.gnupg
 EOF
 fi
+
+echo "RPM signing KEYID: $KEYID"
+echo "RPM signing FINGERPRINT: $FINGERPRINT"
+cat ~/.rpmmacros
 
 mv source_dir/src ${PROJECT_NAME}-${VERSION}
 tar -cvjf ${PROJECT_NAME}-${VERSION}.tar.bz2 ${PROJECT_NAME}-${VERSION}
