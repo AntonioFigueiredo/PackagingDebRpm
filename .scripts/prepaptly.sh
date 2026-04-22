@@ -1,13 +1,26 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 PKGDIR=pkgs
 
 mkdir -p ${PKGDIR}
 mv *-debpkg/*.deb ${PKGDIR}
 
+mkdir -p ~/.gnupg
+chmod 700 ~/.gnupg
+
+echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
+
+KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
+if [ -z "${KEYID}" ]; then
+    echo "ERROR: Could not determine GPG key ID"
+    exit 1
+fi
+
 aptly repo create -distribution "${RELEASE}" -component main "${PROJECT_NAME}"
 aptly repo add "${PROJECT_NAME}" "${PKGDIR}"
-aptly repo show -with-packages "${PROJECT_NAME}"
+# aptly repo show -with-packages "${PROJECT_NAME}"
 
 ARCHITECTURES=$(
 	aptly repo show -with-packages "${PROJECT_NAME}" | \
@@ -17,13 +30,12 @@ ARCHITECTURES=$(
 echo "$ARCHITECTURES"
 
 aptly publish repo \
-		-gpg-key="-kBD78A430515E1D36" \
+		-gpg-key="${KEYID}" \
 		${ARCHITECTURES:+ -architectures="${ARCHITECTURES}"} \
 		"${PROJECT_NAME}"
 
-if [ -n "${GPG_PUBLIC_KEY}" ]; then
-    echo "${GPG_PUBLIC_KEY}" > ~/.aptly/public/repo-public-key.asc
-fi
+mkdir -p ~/.aptly/public
+echo "${GPG_PUBLIC_KEY}" > ~/.aptly/public/repo-public-key.asc
 
 find ~/.aptly
 
