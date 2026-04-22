@@ -264,17 +264,18 @@ jobs:
       - name: Install createrepo
         run: dnf install -y createrepo_c
 
-      - name: Build RPM on ${{ matrix.container }}
-        run: bash ci/.scripts/buildrpm.sh
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-      
-
       - name: Create safe artifact name
         id: safename
         run: |
           SAFE_NAME=$(echo "${{ matrix.container }}" | tr ':' '-')
           echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build RPM on ${{ matrix.container }}
+        run: bash ci/.scripts/buildrpm.sh
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          RPM_REPO_ID: ${{ steps.safename.outputs.safe_name }}
 
       - name: Upload RPM Repository
         uses: actions/upload-artifact@v4

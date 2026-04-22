@@ -37,3 +37,23 @@ rpm -Kv ~/rpmbuild/RPMS/*/*.rpm
 mkdir -p ${GITHUB_WORKSPACE}/rpm-artifacts
 cp -r ~/rpmbuild/RPMS ${GITHUB_WORKSPACE}/rpm-artifacts/
 cp -r ~/rpmbuild/SRPMS ${GITHUB_WORKSPACE}/rpm-artifacts/
+
+mkdir -p ${GITHUB_WORKSPACE}/rpm-artifacts/packages
+find ~/rpmbuild/RPMS -type f -name "*.rpm" -exec cp {} ${GITHUB_WORKSPACE}/rpm-artifacts/packages/ \;
+find ~/rpmbuild/SRPMS -type f -name "*.rpm" -exec cp {} ${GITHUB_WORKSPACE}/rpm-artifacts/packages/ \;
+
+createrepo_c ${GITHUB_WORKSPACE}/rpm-artifacts/packages
+
+if [ -n "$GPG_PUBLIC_KEY" ]; then
+    echo "${GPG_PUBLIC_KEY}" > ${GITHUB_WORKSPACE}/rpm-artifacts/RPM-GPG-KEY-${PROJECT_NAME}
+fi
+
+cat > ${GITHUB_WORKSPACE}/rpm-artifacts/${PROJECT_NAME}.repo <<EOF
+[${PROJECT_NAME}]
+name=${PROJECT_NAME} RPM Repository
+baseurl=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/rpm/${RPM_REPO_ID}/packages/
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/rpm/${RPM_REPO_ID}/RPM-GPG-KEY-${PROJECT_NAME}
+EOF
