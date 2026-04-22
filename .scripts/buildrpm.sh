@@ -7,8 +7,16 @@ VERSION="0.1"
 
 # Import GPG key
 if [ -n "$GPG_PRIVATE_KEY" ]; then
+    mkdir -p ~/.gnupg
+    chmod 700 ~/.gnupg
+
     echo "$GPG_PRIVATE_KEY" | gpg --batch --import
     KEYID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+
+    if [ -z "$KEYID" ]; then
+        echo "ERROR: Could not determine GPG key ID for RPM signing"
+        exit 1
+    fi
 
     cat > ~/.rpmmacros <<EOF
 %_signature gpg
@@ -29,10 +37,14 @@ dnf builddep -y ${PROJECT_NAME}.spec
 rpmbuild -ba ${PROJECT_NAME}.spec
 
 if [ -n "$GPG_PRIVATE_KEY" ]; then
-    find . -name "*.rpm" -exec rpmsign --addsign {} \;
+    find ~/rpmbuild/RPMS -type f -name "*.rpm" -exec rpmsign --addsign {} \;
+    find ~/rpmbuild/SRPMS -type f -name "*.rpm" -exec rpmsign --addsign {} \;
 fi
-echo "=== Verify RPM signatures ==="
+echo "=== Verify binary RPM signatures ==="
 rpm -Kv ~/rpmbuild/RPMS/*/*.rpm
+
+echo "=== Verify source RPM signatures ==="
+rpm -Kv ~/rpmbuild/SRPMS/*.rpm
 
 mkdir -p ${GITHUB_WORKSPACE}/rpm-artifacts
 cp -r ~/rpmbuild/RPMS ${GITHUB_WORKSPACE}/rpm-artifacts/
