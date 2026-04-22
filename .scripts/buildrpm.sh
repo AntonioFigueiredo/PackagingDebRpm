@@ -52,6 +52,12 @@ if [ -n "$GPG_PRIVATE_KEY" ]; then
     find ~/rpmbuild/RPMS -type f -name "*.rpm" -exec rpmsign --addsign {} \;
     find ~/rpmbuild/SRPMS -type f -name "*.rpm" -exec rpmsign --addsign {} \;
 fi
+
+if [ -n "$GPG_PUBLIC_KEY" ]; then
+    echo "${GPG_PUBLIC_KEY}" > /tmp/RPM-GPG-KEY-${PROJECT_NAME}
+    rpm --import /tmp/RPM-GPG-KEY-${PROJECT_NAME}
+fi
+
 echo "=== Verify binary RPM signatures ==="
 rpm -Kv ~/rpmbuild/RPMS/*/*.rpm
 
