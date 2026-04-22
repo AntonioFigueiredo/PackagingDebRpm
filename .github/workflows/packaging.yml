@@ -221,6 +221,9 @@ jobs:
         with:
           entrypoint: /bin/bash
           args: ci/.scripts/prepaptly.sh
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
 
       - name: Upload Repo
         uses: actions/upload-artifact@v4
